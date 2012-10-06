@@ -159,8 +159,8 @@ public class LoadContext {
         UnsafeBins b = (UnsafeBins) allocator.getBinFromAddr(chunkAdr);
         this.currentBaseAdr = b.binAddr + b.findOffsetForChunkId(AddrAlign.getChunkId(chunkAdr));
         // Put the offset to 4... Don't read chunk size. Always same value as chunk size
-        this.currentOffset = INT_LENGTH;
-        this.remaining = b.chunkSize;
+        this.currentOffset = Bins.LENGTH_OFFSET;
+        this.remaining = b.userDataChunkSize;
 
     }
 

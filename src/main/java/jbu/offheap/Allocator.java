@@ -1,5 +1,6 @@
 package jbu.offheap;
 
+import jbu.exception.InvalidParameterException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,7 +19,7 @@ public class Allocator implements AllocatorMBean {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Allocator.class);
 
-    private static final int DEFAULT_MIN_CHUNK_SIZE = 3500;
+    private static final int DEFAULT_MIN_CHUNK_SIZE = 256;
     private static final double MIN_FILL_FACTOR = 0.75d;
 
     //Thread safe until cannot be modified at runtime
@@ -35,13 +36,24 @@ public class Allocator implements AllocatorMBean {
         this(maxMemory, DEFAULT_MIN_CHUNK_SIZE);
     }
 
+    /**
+     * Allocate {@code maxMemory} with the smaller chunk size {@code firstChunkSize}
+     * {@code firstChunkSize} must a power of two and at least 8
+     *
+     * @param maxMemory
+     * @param firstChunkSize
+     */
     public Allocator(long maxMemory, int firstChunkSize) {
-        constructWithLinearScale(maxMemory, 1, firstChunkSize);
+        if (!checkFirstChunkSizeValid(firstChunkSize)) {
+            throw new InvalidParameterException("FirstChunkSize must be a power of two and at least 8");
+        }
+        constructWithLinearScale(maxMemory, 4, firstChunkSize);
     }
 
     private void constructWithLinearScale(long initialMemory, int maxBins, int firstChunkSize) {
-        // Construct scale
+        LOGGER.info("allocate_native_memory, total_user_size:{} Mb, {} buffers, initial_chunk_size: {}", initialMemory / 1024 / 1024, maxBins, firstChunkSize);
 
+        // Construct scale
         long binsSize = initialMemory / maxBins;
         int currentChunkSize = firstChunkSize;
 
@@ -112,9 +124,9 @@ public class Allocator implements AllocatorMBean {
             }
             previousChunkAddr = chunkAddr;
             // update memory to allocate
-            memoryToAllocate -= usedBin.getKey();
+            memoryToAllocate -= usedBin.getValue().userDataChunkSize;
             // update used memory
-            usedMemoryByAllocate += usedBin.getValue().finalChunkSize;
+            usedMemoryByAllocate += usedBin.getValue().realChunkSize;
 
             nbAllocateChunk++;
         }
@@ -122,6 +134,8 @@ public class Allocator implements AllocatorMBean {
         setNextChunk(previousChunkAddr, -1);
         this.usedMemory.getAndAdd(usedMemoryByAllocate);
         this.nbAllocation.getAndAdd(nbAllocateChunk);
+        LOGGER.debug("take_memory, memory_size: {} Bytes, first_chunk_id: {}, used_memory: {}, nb_chunk_allocated {}",
+                memorySize, firstChunk, this.usedMemory.get(), this.nbAllocation.get());
         return firstChunk;
     }
 
@@ -138,7 +152,7 @@ public class Allocator implements AllocatorMBean {
             bin.freeChunk(currentAdr);
             currentAdr = nextAdr;
             // update counter
-            usedMemory.getAndAdd(-bin.finalChunkSize);
+            usedMemory.getAndAdd(-bin.realChunkSize);
             nbFree.incrementAndGet();
         } while (nextAdr != -1);
     }
@@ -167,7 +181,7 @@ public class Allocator implements AllocatorMBean {
         try {
             mbs.registerMBean(this, new ObjectName("Allocator:name=allocator"));
             for (Bins bbb : binsBySize.values()) {
-                mbs.registerMBean(bbb, new ObjectName("Allocator.UnsafeBins:maxChunk=" + bbb.chunkSize));
+                mbs.registerMBean(bbb, new ObjectName("Allocator.UnsafeBins:maxChunk=" + bbb.userDataChunkSize));
             }
         } catch (InstanceAlreadyExistsException | MBeanRegistrationException | NotCompliantMBeanException | MalformedObjectNameException e) {
             LOGGER.warn("Cannot register JMX Beans", e);
@@ -203,5 +217,8 @@ public class Allocator implements AllocatorMBean {
         return nbFree.longValue();
     }
 
+    private boolean checkFirstChunkSizeValid(int firstChunkSize) {
+        return (firstChunkSize > 8 && Integer.bitCount(firstChunkSize) == 1);
+    }
 
 }

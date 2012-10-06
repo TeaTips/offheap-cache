@@ -10,13 +10,18 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 
 abstract class Bins {
 
+    /**
+     * Use 64 bits for storing length for keeping a 64 align
+     */
+    static final int LENGTH_OFFSET = 8;
+
     protected static final int FREE = 0;
     protected static final int USED = 1;
 
     // Chunk real size
-    final int finalChunkSize;
+    final int realChunkSize;
     // Userdata chunk size
-    final int chunkSize;
+    final int userDataChunkSize;
     // Base addr of bin
     final int baseAddr;
 
@@ -32,23 +37,24 @@ abstract class Bins {
     // Helper for find free chunk
     final AtomicInteger chunkOffset = new AtomicInteger(0);
 
-    protected Bins(int initialChunkNumber, int chunkSize, int baseAddr) {
+    protected Bins(int initialChunkNumber, int realChunkSize, int baseAddr) {
         this.size = initialChunkNumber;
-        this.chunkSize = chunkSize;
+        this.realChunkSize = realChunkSize;
         this.baseAddr = baseAddr;
 
         if (initialChunkNumber <= 0) {
             // Throw exception
             throw new InvalidParameterException("InitialChunkNumber must be > 0 ");
         }
-        if (chunkSize <= 0) {
+        if (realChunkSize <= 0) {
             // Throw exception
-            throw new InvalidParameterException("chunkSize must be > 0 ");
+            throw new InvalidParameterException("realChunkSize must be > 0 ");
         }
-        // In a chunk we also store chunck size in int. Adding 4 byte
+
+        // In a chunk we also store chunck size in int. Adding LENGTH_OFFSET byte
         // And addr of next chunk. Adding 8 byte
-        // FIXME can be optimised. Using less bytes if chunksize < 256 or < 65000
-        this.finalChunkSize = chunkSize + INT_LENGTH + LONG_LENGTH;
+        // User data is realSize minus this
+        this.userDataChunkSize = realChunkSize - LENGTH_OFFSET - LONG_LENGTH;
         this.chunks = new AtomicIntegerArray(initialChunkNumber);
     }
 
@@ -123,7 +129,7 @@ abstract class Bins {
     abstract byte[] loadFromChunk(int chunkId);
 
     long findOffsetForChunkId(int chunkId) {
-        return (long)chunkId * (long)finalChunkSize;
+        return (long) chunkId * (long) realChunkSize;
     }
 
     public int getAllocatedChunks() {
@@ -131,6 +137,6 @@ abstract class Bins {
     }
 
     public int getUsedSize() {
-        return occupation.intValue() * finalChunkSize;
+        return occupation.intValue() * realChunkSize;
     }
 }

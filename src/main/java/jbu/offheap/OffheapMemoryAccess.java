@@ -25,7 +25,7 @@ public class OffheapMemoryAccess {
                 throw new BufferOverflowException("Data is too large");
             }
             Bins bin = allocator.getBinFromAddr(currentChunkAdr);
-            int chunkSize = bin.chunkSize;
+            int chunkSize = bin.userDataChunkSize;
             bin.storeInChunk(currentChunkId, data, currentOffset,
                     (data.length - currentOffset > chunkSize) ? chunkSize : data.length - currentOffset);
             currentOffset += chunkSize;

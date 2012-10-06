@@ -19,7 +19,7 @@ public class BenchCache {
         // Get them all
         // Remove them
         // etc...
-        int NB_OBJ = 1000000;
+        int NB_OBJ = 100000;
 
         long putTime = 0;
         long put = 0;

@@ -1,4 +1,5 @@
 package jbu.offheap;
+
 import static jbu.Primitive.*;
 import static jbu.UnsafeUtil.unsafe;
 
@@ -22,7 +23,6 @@ public class StoreContext {
 
     public void storeInt(int value) {
         unsafe.putInt(this.currentBaseAdr + this.currentOffset, value);
-        // FIXME 4 (int length) must be constant
         this.currentOffset += INT_LENGTH;
         this.remaining -= INT_LENGTH;
     }
@@ -52,10 +52,10 @@ public class StoreContext {
         UnsafeBins b = (UnsafeBins) allocator.getBinFromAddr(chunkAdr);
         this.currentBaseAdr = b.binAddr + b.findOffsetForChunkId(AddrAlign.getChunkId(chunkAdr));
         this.currentOffset = 0;
-        this.remaining = b.chunkSize;
+        this.remaining = b.userDataChunkSize;
         // put the size of data in 4 first byte
         // FIXME with store context always use full size
         unsafe.putInt(this.currentBaseAdr + this.currentOffset, this.remaining);
-        this.currentOffset += INT_LENGTH;
+        this.currentOffset += Bins.LENGTH_OFFSET;
     }
 }
