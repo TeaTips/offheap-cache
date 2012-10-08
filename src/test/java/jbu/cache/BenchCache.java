@@ -26,12 +26,12 @@ public class BenchCache {
         long getTime = 0;
         long get = 0;
 
-        Allocator allocator = new Allocator(4l * 1024l * 1024l * 1024l);
+        Allocator allocator = new Allocator( 1024l * 1024l * 1024l);
         Cache<Integer, LotOfPrimitiveAndArrayAndString> cache = new Cache<Integer, LotOfPrimitiveAndArrayAndString>("testCache", allocator, new UnsafePrimitiveBeanSerializer());
         LotOfPrimitiveAndArrayAndString cachedObject = new LotOfPrimitiveAndArrayAndString();
         int estimSize = new UnsafePrimitiveBeanSerializer().calculateSerializedSize(cachedObject);
-        long objectSizeInMemory = estimSize * NB_OBJ / 1024 / 1024;
-        System.out.println("Need to cache  : " + estimSize + " MB");
+        long objectSizeInMemory = ((long)estimSize * (long)NB_OBJ) / 1024l / 1024l;
+        System.out.println("Need to cache  : " + objectSizeInMemory + " MB");
         System.out.println("Store : " + NB_OBJ);
         for (int j = 0; j < 100; j++) {
             long start = System.nanoTime();
@@ -54,7 +54,6 @@ public class BenchCache {
             double putTimeSecond = putTime / (double) (1000 * 1000 * 1000);
 
 
-            System.out.println("Real object size : " + objectSizeInMemory + " MB");
             System.out.println("Memory allocated : " + allocator.getAllocatedMemory() / 1024 / 1024 + " MB");
             System.out.println("Memory used : " + allocator.getUsedMemory() / 1024 / 1024 + " MB");
             System.out.println("Puts : " + put / putTimeSecond + " object/s");

@@ -17,7 +17,10 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class Allocator implements AllocatorMBean {
 
+
     private static final Logger LOGGER = LoggerFactory.getLogger(Allocator.class);
+
+    private static final Boolean LOGGER_IS_DEBUG_ENABLED = LOGGER.isDebugEnabled();
 
     private static final int DEFAULT_MIN_CHUNK_SIZE = 256;
     private static final double MIN_FILL_FACTOR = 0.75d;
@@ -47,7 +50,7 @@ public class Allocator implements AllocatorMBean {
         if (!checkFirstChunkSizeValid(firstChunkSize)) {
             throw new InvalidParameterException("FirstChunkSize must be a power of two and at least 8");
         }
-        constructWithLinearScale(maxMemory, 4, firstChunkSize);
+        constructWithLinearScale(maxMemory, 1, firstChunkSize);
     }
 
     private void constructWithLinearScale(long initialMemory, int maxBins, int firstChunkSize) {
@@ -84,7 +87,7 @@ public class Allocator implements AllocatorMBean {
             Map.Entry<Integer, Bins> lesserBin = binsBySize.floorEntry(memoryToAllocate);
             Map.Entry<Integer, Bins> upperBin = binsBySize.ceilingEntry(memoryToAllocate);
             // Fill factor determine when stop cutting in two memory to allocate
-            if (lesserBin == null || (((double) memorySize / (double) lesserBin.getKey()) > MIN_FILL_FACTOR && upperBin != null)) {
+            if (lesserBin == null || (((double) memorySize / (double) lesserBin.getKey().intValue()) > MIN_FILL_FACTOR && upperBin != null)) {
                 // take upper
                 usedBin = upperBin;
             } else {
@@ -134,8 +137,10 @@ public class Allocator implements AllocatorMBean {
         setNextChunk(previousChunkAddr, -1);
         this.usedMemory.getAndAdd(usedMemoryByAllocate);
         this.nbAllocation.getAndAdd(nbAllocateChunk);
-        LOGGER.debug("take_memory, memory_size: {} Bytes, first_chunk_id: {}, used_memory: {}, nb_chunk_allocated {}",
-                memorySize, firstChunk, this.usedMemory.get(), this.nbAllocation.get());
+        if (LOGGER_IS_DEBUG_ENABLED) {
+            LOGGER.debug("take_memory, memory_size: {} Bytes, first_chunk_id: {}, used_memory: {}, nb_chunk_allocated {}",
+                    memorySize, firstChunk, this.usedMemory.get(), this.nbAllocation.get());
+        }
         return firstChunk;
     }
 
@@ -155,6 +160,23 @@ public class Allocator implements AllocatorMBean {
             usedMemory.getAndAdd(-bin.realChunkSize);
             nbFree.incrementAndGet();
         } while (nextAdr != -1);
+    }
+
+    /**
+     * @param currentBaseAdr
+     * @return
+     */
+    public boolean extend(long currentBaseAdr) {
+        if (LOGGER_IS_DEBUG_ENABLED) {
+            LOGGER.debug("extends, currentChunk: {}, with {} byte", currentBaseAdr);
+        }
+        long chunkToAdd = alloc(getBinFromAddr(currentBaseAdr).realChunkSize);
+        if (chunkToAdd < 0) {
+            return false;
+        } else {
+            setNextChunk(currentBaseAdr, chunkToAdd);
+            return true;
+        }
     }
 
     public StoreContext getStoreContext(long firstChunkAdr) {
@@ -220,5 +242,6 @@ public class Allocator implements AllocatorMBean {
     private boolean checkFirstChunkSizeValid(int firstChunkSize) {
         return (firstChunkSize > 8 && Integer.bitCount(firstChunkSize) == 1);
     }
+
 
 }

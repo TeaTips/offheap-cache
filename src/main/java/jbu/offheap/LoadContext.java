@@ -1,9 +1,16 @@
 package jbu.offheap;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static jbu.UnsafeUtil.unsafe;
 import static jbu.Primitive.*;
 
 public class LoadContext {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(StoreContext.class);
+    private static final Boolean LOGGER_IS_TRACE_ENABLED = LOGGER.isTraceEnabled();
+    private static final Boolean LOGGER_IS_DEBUG_ENABLED = LOGGER.isDebugEnabled();
 
     private long firstChunkAdr;
     private long currentBaseAdr;
@@ -22,6 +29,8 @@ public class LoadContext {
         beginNewChunk(this.firstChunkAdr);
     }
 
+    /* Current implementation of all loadPrimitive have bad performance. Use sparingly */
+
     public boolean loadBoolean() {
         boolean res = unsafe.getBoolean(null, this.currentBaseAdr + this.currentOffset);
         this.currentOffset += BOOLEAN_LENGTH;
@@ -30,10 +39,30 @@ public class LoadContext {
     }
 
     public char loadChar() {
-        char res = unsafe.getChar(this.currentBaseAdr + this.currentOffset);
-        this.currentOffset += CHAR_LENGTH;
-        this.remaining -= CHAR_LENGTH;
-        return res;
+        if (LOGGER_IS_TRACE_ENABLED) {
+            LOGGER.trace("load_char, remaining {}", remaining);
+        }
+
+        if (this.remaining >= CHAR_LENGTH) {
+            // Int can be loaded in one time
+            char res = unsafe.getChar(this.currentBaseAdr + this.currentOffset);
+            this.currentOffset += CHAR_LENGTH;
+            this.remaining -= CHAR_LENGTH;
+            return res;
+        } else {
+            // Load all remaining bytes of the chunk (or remaining byte for primitive) in a buffer and begin load of a new chunk
+            int primitiveSize = CHAR_LENGTH;
+            int byteRemaining = CHAR_LENGTH;
+            long bufAddr = unsafe.allocateMemory(CHAR_LENGTH);
+            try {
+                partialChunkLoad(primitiveSize, byteRemaining, bufAddr);
+                char res = unsafe.getChar(bufAddr);
+                LOGGER.trace("load_char_partial, final_value: {}, bin: {}", res, Integer.toBinaryString(res));
+                return res;
+            } finally {
+                unsafe.freeMemory(bufAddr);
+            }
+        }
     }
 
     public byte loadByte() {
@@ -44,43 +73,171 @@ public class LoadContext {
     }
 
     public short loadShort() {
-        short res = unsafe.getShort(this.currentBaseAdr + this.currentOffset);
-        this.currentOffset += SHORT_LENGTH;
-        this.remaining -= SHORT_LENGTH;
-        return res;
+        if (LOGGER_IS_TRACE_ENABLED) {
+            LOGGER.trace("load_short, remaining {}", remaining);
+        }
+
+        if (this.remaining >= SHORT_LENGTH) {
+            // Int can be loaded in one time
+            short res = unsafe.getShort(this.currentBaseAdr + this.currentOffset);
+            this.currentOffset += SHORT_LENGTH;
+            this.remaining -= SHORT_LENGTH;
+            return res;
+        } else {
+            // Load all remaining bytes of the chunk (or remaining byte for primitive) in a buffer and begin load of a new chunk
+            int primitiveSize = SHORT_LENGTH;
+            int byteRemaining = SHORT_LENGTH;
+            long bufAddr = unsafe.allocateMemory(SHORT_LENGTH);
+            try {
+                partialChunkLoad(primitiveSize, byteRemaining, bufAddr);
+                short res = unsafe.getShort(bufAddr);
+                LOGGER.trace("load_short_partial, final_value: {}, bin: {}", res, Integer.toBinaryString(res));
+                return res;
+            } finally {
+                unsafe.freeMemory(bufAddr);
+            }
+        }
     }
 
     public int loadInt() {
-        int res = unsafe.getInt(this.currentBaseAdr + this.currentOffset);
-        this.currentOffset += INT_LENGTH;
-        this.remaining -= INT_LENGTH;
-        return res;
+        if (LOGGER_IS_TRACE_ENABLED) {
+            LOGGER.trace("load_int, remaining {}", remaining);
+        }
+
+        if (this.remaining >= INT_LENGTH) {
+            // Int can be loaded in one time
+            int res = unsafe.getInt(this.currentBaseAdr + this.currentOffset);
+            this.currentOffset += INT_LENGTH;
+            this.remaining -= INT_LENGTH;
+            return res;
+        } else {
+            // Load all remaining bytes of the chunk (or remaining byte for primitive) in a buffer and begin load of a new chunk
+            int primitiveSize = INT_LENGTH;
+            int byteRemaining = INT_LENGTH;
+            long bufAddr = unsafe.allocateMemory(INT_LENGTH);
+            try {
+                partialChunkLoad(primitiveSize, byteRemaining, bufAddr);
+                int res = unsafe.getInt(bufAddr);
+                LOGGER.trace("load_int_partial, final_value: {}, bin: {}", res, Integer.toBinaryString(res));
+                return res;
+            } finally {
+                unsafe.freeMemory(bufAddr);
+            }
+        }
     }
 
-    public long loadLong() {
-        long res = unsafe.getLong(this.currentBaseAdr + this.currentOffset);
-        this.currentOffset += LONG_LENGTH;
-        this.remaining -= LONG_LENGTH;
-        return res;
-    }
 
     public float loadFloat() {
-        float res = unsafe.getFloat(this.currentBaseAdr + this.currentOffset);
-        this.currentOffset += FLOAT_LENGTH;
-        this.remaining -= FLOAT_LENGTH;
-        return res;
+        if (LOGGER_IS_TRACE_ENABLED) {
+            LOGGER.trace("load_float, remaining {}", remaining);
+        }
+
+        if (this.remaining >= FLOAT_LENGTH) {
+            // Int can be loaded in one time
+            float res = unsafe.getFloat(this.currentBaseAdr + this.currentOffset);
+            this.currentOffset += FLOAT_LENGTH;
+            this.remaining -= FLOAT_LENGTH;
+            return res;
+        } else {
+            // Load all remaining bytes of the chunk (or remaining byte for primitive) in a buffer and begin load of a new chunk
+            int primitiveSize = FLOAT_LENGTH;
+            int byteRemaining = FLOAT_LENGTH;
+            long bufAddr = unsafe.allocateMemory(FLOAT_LENGTH);
+            try {
+                partialChunkLoad(primitiveSize, byteRemaining, bufAddr);
+                int res = unsafe.getInt(bufAddr);
+                LOGGER.trace("load_float_partial, final_value: {}, bin: {}", res, Integer.toBinaryString(res));
+                // When store chunked transform float to raw int bits
+                return Float.intBitsToFloat(res);
+            } finally {
+                unsafe.freeMemory(bufAddr);
+            }
+        }
     }
 
     public double loadDouble() {
-        double res = unsafe.getDouble(this.currentBaseAdr + this.currentOffset);
-        this.currentOffset += DOUBLE_LENGTH;
-        this.remaining -= DOUBLE_LENGTH;
-        return res;
+        if (LOGGER_IS_TRACE_ENABLED) {
+            LOGGER.trace("load_float, remaining {}", remaining);
+        }
+
+        if (this.remaining >= DOUBLE_LENGTH) {
+            // Int can be loaded in one time
+            double res = unsafe.getDouble(this.currentBaseAdr + this.currentOffset);
+            this.currentOffset += DOUBLE_LENGTH;
+            this.remaining -= DOUBLE_LENGTH;
+            return res;
+        } else {
+            // Load all remaining bytes of the chunk (or remaining byte for primitive) in a buffer and begin load of a new chunk
+            int primitiveSize = DOUBLE_LENGTH;
+            int byteRemaining = DOUBLE_LENGTH;
+            long bufAddr = unsafe.allocateMemory(DOUBLE_LENGTH);
+            try {
+                partialChunkLoad(primitiveSize, byteRemaining, bufAddr);
+                long res = unsafe.getLong(bufAddr);
+                LOGGER.trace("load_double_partial, final_value: {}, bin: {}", res, Long.toBinaryString(res));
+                // When store chunked transform float to raw int bits
+                return Double.longBitsToDouble(res);
+            } finally {
+                unsafe.freeMemory(bufAddr);
+            }
+        }
     }
+
+    public long loadLong() {
+        if (LOGGER_IS_TRACE_ENABLED) {
+            LOGGER.trace("load_long, remaining {}", remaining);
+        }
+
+        if (this.remaining >= LONG_LENGTH) {
+            // Int can be loaded in one time
+            long res = unsafe.getLong(this.currentBaseAdr + this.currentOffset);
+            this.currentOffset += LONG_LENGTH;
+            this.remaining -= LONG_LENGTH;
+            return res;
+        } else {
+            // Load all remaining bytes of the chunk (or remaining byte for primitive) in a buffer and begin load of a new chunk
+            int primitiveSize = LONG_LENGTH;
+            int byteRemaining = LONG_LENGTH;
+            long bufAddr = unsafe.allocateMemory(LONG_LENGTH);
+            try {
+                partialChunkLoad(primitiveSize, byteRemaining, bufAddr);
+                long res = unsafe.getLong(bufAddr);
+                LOGGER.trace("load_long_partial, final_value: {}, bin: {}", res, Long.toBinaryString(res));
+                return res;
+            } finally {
+                unsafe.freeMemory(bufAddr);
+            }
+        }
+    }
+
+    private void partialChunkLoad(int primitiveSize, int byteRemaining, long bufAddr) {
+        do {
+            if (this.remaining >= BYTE_LENGTH) {
+                // Load one byte
+                byte b = unsafe.getByte(this.currentBaseAdr + this.currentOffset);
+                // put them into int
+                unsafe.putByte(null, bufAddr + primitiveSize - byteRemaining, b);
+                byteRemaining -= BYTE_LENGTH;
+                this.remaining -= BYTE_LENGTH;
+                this.currentOffset += BYTE_LENGTH;
+            } else if (this.remaining == 0) {
+                // Load a new chunk
+                if (LOGGER_IS_DEBUG_ENABLED) {
+                    LOGGER.debug("chunk_empty, remaining: {}", byteRemaining);
+                }
+                // Get next chunk address in last 4 byte
+                beginNewChunk(unsafe.getLong(this.currentBaseAdr + this.currentOffset));
+            }
+        } while (byteRemaining > 0);
+    }
+
 
     // NOT USE IT for another thing than array .... NYI (Not yet implemented)
     // Can be used for array...
     public void loadArray(Object dest, final long offset, final int arrayLength) {
+        if (LOGGER_IS_TRACE_ENABLED) {
+            LOGGER.trace("load_array, to: {}, offset: {}, length: {}, remaining: {}", dest, offset, arrayLength, this.remaining);
+        }
         int byteRemaining = arrayLength;
         do {
             int byteToCopy = (byteRemaining > remaining) ? remaining : byteRemaining;
@@ -98,6 +255,9 @@ public class LoadContext {
             this.remaining -= byteToCopy;
 
             if (this.remaining == 0) {
+                if (LOGGER_IS_DEBUG_ENABLED) {
+                    LOGGER.debug("chunk_empty, remaining: {}", byteRemaining);
+                }
                 // Get next chunk address in last 4 byte
                 beginNewChunk(unsafe.getLong(this.currentBaseAdr + this.currentOffset));
             }
