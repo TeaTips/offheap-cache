@@ -73,6 +73,15 @@ public class Allocator implements AllocatorMBean {
         }
     }
 
+
+    /**
+     * Alloc with the littest chunk size
+     * @return
+     */
+    public long alloc() {
+        return alloc(binsBySize.firstKey());
+    }
+
     // Allocate with less waste but much more chunks
     public long alloc(int memorySize) {
         int usedMemoryByAllocate = 0;
@@ -242,6 +251,5 @@ public class Allocator implements AllocatorMBean {
     private boolean checkFirstChunkSizeValid(int firstChunkSize) {
         return (firstChunkSize > 8 && Integer.bitCount(firstChunkSize) == 1);
     }
-
 
 }

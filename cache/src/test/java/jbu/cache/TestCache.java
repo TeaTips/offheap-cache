@@ -1,6 +1,7 @@
 package jbu.cache;
 
 import jbu.testobject.LotOfPrimitiveAndArrayAndString;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -13,7 +14,7 @@ public class TestCache {
         LotOfPrimitiveAndArrayAndString cachedObject = new LotOfPrimitiveAndArrayAndString();
         cache.put(1l, cachedObject);
         LotOfPrimitiveAndArrayAndString res = cache.get(1l);
-        assertEquals(res, cachedObject);
+        Assert.assertEquals(res, cachedObject);
     }
 
 

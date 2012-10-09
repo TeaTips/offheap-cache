@@ -48,9 +48,7 @@ public final class Cache<K, V> implements CacheMBean {
         if (value == null) {
             throw new IllegalArgumentException("Value should not be null");
         }
-        //int estimatedSize = pbs.calculateSerializedSize(value);
-        int estimatedSize = 10;
-        long addr = allocator.alloc(estimatedSize);
+        long addr = allocator.alloc();
         pbs.serialize(value, allocator.getStoreContext(addr));
         keys.put(key, addr);
         return addr;
