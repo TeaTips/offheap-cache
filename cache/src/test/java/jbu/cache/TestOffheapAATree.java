@@ -20,8 +20,9 @@ public class TestOffheapAATree {
         OffheapAATree tree = new OffheapAATree();
         Allocator all = new Allocator(1l * 1024l * 1024l);
         Node l = new Node(all);
+        l.setLevel(1);
         Node res = tree.skew(l);
-        assertEquals(l, res);
+        assertEquals(l.getAddr(), res.getAddr());
     }
 
     @Test
@@ -56,13 +57,84 @@ public class TestOffheapAATree {
         // the returned node should be L
         assertEquals(l.getAddr(), res.getAddr());
         // L right node should be T
-        assertEquals(l.getRightNode().getAddr(), r.getAddr());
+        assertEquals(res.getRightNode().getAddr(), t.getAddr());
         // L left node should be A
-        assertEquals(l.getLeftNode().getAddr(), a.getAddr());
+        assertEquals(res.getLeftNode().getAddr(), a.getAddr());
         // T left node should be B
         assertEquals(t.getLeftNode().getAddr(), b.getAddr());
         // T right node should be R
         assertEquals(t.getRightNode().getAddr(), r.getAddr());
     }
 
+    @Test
+    public void split_null_node_should_return_null() {
+        OffheapAATree tree = new OffheapAATree();
+        Node res = tree.split(null);
+        assertNull(res);
+    }
+
+    @Test
+    public void split_node_with_null_rigth_node_should_return_same() {
+        OffheapAATree tree = new OffheapAATree();
+        Allocator all = new Allocator(1l * 1024l * 1024l);
+        Node l = new Node(all);
+        l.setLevel(1);
+        Node res = tree.split(l);
+        assertEquals(l.getAddr(), res.getAddr());
+    }
+
+    @Test
+    public void split_node_with_rigth_of_rigth_null_node_should_return_same() {
+        OffheapAATree tree = new OffheapAATree();
+        Allocator all = new Allocator(1l * 1024l * 1024l);
+        Node l = new Node(all);
+        Node r = new Node(all);
+        l.setLevel(1);
+        r.setLevel(2);
+        l.setRightNode(r.getAddr());
+        Node res = tree.split(l);
+        assertEquals(l.getAddr(), res.getAddr());
+    }
+
+    @Test
+    public void split_node_need_to_be_rebalanced() {
+        // Test example of Wikipedia http://en.wikipedia.org/wiki/AA_tree
+        Allocator all = new Allocator(1l * 1024l * 1024l);
+        Node t = new Node(all);
+        Node r = new Node(all);
+        Node x = new Node(all);
+        Node a = new Node(all);
+        Node b = new Node(all);
+        // a b are leaf
+        a.setLevel(1);
+        b.setLevel(1);
+
+        // r,x and t are upper level
+        r.setLevel(2);
+        t.setLevel(2);
+        x.setLevel(2);
+        // l have two children a and b
+        t.setLeftNode(a.getAddr());
+        r.setLeftNode(b.getAddr());
+
+        // l is leftnode of t
+        t.setRightNode(r.getAddr());
+        // r is rightnode of t
+        r.setRightNode(x.getAddr());
+
+        OffheapAATree tree = new OffheapAATree();
+        Node res = tree.split(t);
+
+        // the returned node should be L
+        assertEquals(r.getAddr(), res.getAddr());
+        // t is left of r
+        assertEquals(t.getAddr(), res.getLeftNode().getAddr());
+        // a is left of t
+        assertEquals(a.getAddr(), res.getLeftNode().getLeftNode().getAddr());
+        // b is right of t
+        assertEquals(b.getAddr(), res.getLeftNode().getRightNode().getAddr());
+        // x is right of r
+        assertEquals(x.getAddr(), res.getRightNode().getAddr());
+
+    }
 }
