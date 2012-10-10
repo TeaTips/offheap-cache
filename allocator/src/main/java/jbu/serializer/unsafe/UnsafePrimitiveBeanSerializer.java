@@ -2,6 +2,7 @@ package jbu.serializer.unsafe;
 
 import static jbu.Primitive.*;
 
+import com.google.common.primitives.Primitives;
 import jbu.UnsafeReflection;
 import jbu.exception.CannotDeserializeException;
 import jbu.offheap.LoadContext;
@@ -19,27 +20,40 @@ public class UnsafePrimitiveBeanSerializer implements Serializer {
         Class clazz = obj.getClass();
         ClassDesc cd = ClassDesc.resolveByClass(clazz);
 
-        // Serialize class reference
-        sc.storeInt(cd.classReference);
-        for (int i = 0; i < cd.nbFields; i++) {
-            cd.types[i].typeSerializer.serialize(obj, sc, cd, i);
+        // Special case if object to serialize is a primitive wrapper (Integer, Long, ...)
+        if (Primitives.isWrapperType(cd.clazz)) {
+            sc.storeInt(cd.classReference);
+            Type wrapperType = Type.resolveType(cd.clazz);
+            wrapperType.typeSerializer.serialize(obj, wrapperType, sc);
+        } else {
+            // Serialize class reference
+            sc.storeInt(cd.classReference);
+            for (int i = 0; i < cd.nbFields; i++) {
+                cd.types[i].typeSerializer.serialize(obj, sc, cd, i);
+            }
         }
     }
 
     @Override
     public Object deserialize(LoadContext lc) throws CannotDeserializeException {
         ClassDesc cd = ClassDesc.resolveByRef(lc.loadInt());
-        Object res = null;
-        // constructor without arg must exist...
-        try {
-            res = cd.clazz.newInstance();
-        } catch (InstantiationException | IllegalAccessException e) {
-            throw new CannotDeserializeException("No public default constructor for class " + cd.clazz, e);
+
+        if (Primitives.isWrapperType(cd.clazz)) {
+            Type wrapperType = Type.resolveType(cd.clazz);
+            return wrapperType.typeSerializer.deserialize(wrapperType, lc);
+        } else {
+            Object res = null;
+            // constructor without arg must exist...
+            try {
+                res = cd.clazz.newInstance();
+            } catch (InstantiationException | IllegalAccessException e) {
+                throw new CannotDeserializeException("No public default constructor for class " + cd.clazz, e);
+            }
+            for (int i = 0; i < cd.nbFields; i++) {
+                cd.types[i].typeSerializer.deserialize(lc, cd, res, i);
+            }
+            return res;
         }
-        for (int i = 0; i < cd.nbFields; i++) {
-            cd.types[i].typeSerializer.deserialize(lc, cd, res, i);
-        }
-        return res;
     }
 
 
