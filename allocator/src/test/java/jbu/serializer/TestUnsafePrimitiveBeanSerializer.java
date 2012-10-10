@@ -327,4 +327,21 @@ public class TestUnsafePrimitiveBeanSerializer {
         //}
     }
 
+    @Test
+    public void test_ser_primitive_wrapper() throws CannotDeserializeException {
+        Allocator a = new Allocator(1 * 1024 * 1024);
+        Serializer pbs = new UnsafePrimitiveBeanSerializer();
+        long addr = a.alloc();
+        // Serialize
+        StoreContext sc = a.getStoreContext(addr);
+        Long object = 1l;
+        pbs.serialize(object, sc);
+        // Deser
+        LoadContext lc = a.getLoadContext(addr);
+        Long res = (Long) pbs.deserialize(lc);
+
+        assertEquals(object, res);
+
+    }
+
 }
