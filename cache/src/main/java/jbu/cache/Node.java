@@ -8,7 +8,7 @@ import jbu.serializer.unsafe.UnsafePrimitiveBeanSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Node {
+public class Node<V> {
 
     private static Logger LOGGER = LoggerFactory.getLogger(Node.class);
 
@@ -32,6 +32,53 @@ public class Node {
      * Used by serializer. Don't use it *
      */
     public Node() {
+    }
+
+    public Node(Allocator allocator, int level, Long key, V value) {
+        this.allocator = allocator;
+        this.level = level;
+        setKey(key);
+        setValue(value);
+        saveNode(allocator.getStoreContext(allocator.alloc()), this);
+    }
+
+
+    /**
+     * Get Deserialized key
+     *
+     * @return
+     */
+    public Long getKey() {
+        try {
+            return (Long) SERIALIZER.deserialize(allocator.getLoadContext(key));
+        } catch (CannotDeserializeException e) {
+            LOGGER.error("Cannot deserialize node", e);
+            return null;
+        }
+    }
+
+    /**
+     * Get Deserialized value
+     *
+     * @return
+     */
+    public V getValue() {
+        try {
+            return (V) SERIALIZER.deserialize(allocator.getLoadContext(value));
+        } catch (CannotDeserializeException e) {
+            LOGGER.error("Cannot deserialize node", e);
+            return null;
+        }
+    }
+
+    private void setKey(Long deserKey) {
+        this.key = allocator.alloc();
+        SERIALIZER.serialize(deserKey, allocator.getStoreContext(this.key));
+    }
+
+    private void setValue(V deserValue) {
+        this.value = allocator.alloc();
+        SERIALIZER.serialize(deserValue, allocator.getStoreContext(this.value));
     }
 
     private static Node loadNode(LoadContext loadContext, Node rootnode) {

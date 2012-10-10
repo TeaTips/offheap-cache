@@ -4,21 +4,23 @@ import jbu.offheap.Allocator;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
 public class TestOffheapAATree {
 
     @Test
     public void skew_null_node_should_be_null() {
-        OffheapAATree tree = new OffheapAATree();
+        OffheapAATree tree = new OffheapAATree(null);
         Node res = tree.skew(null);
         assertNull(res);
     }
 
     @Test
     public void skew_node_with_left_null_should_return_same_node() {
-        OffheapAATree tree = new OffheapAATree();
         Allocator all = new Allocator(1l * 1024l * 1024l);
+        OffheapAATree tree = new OffheapAATree(all);
+
         Node l = new Node(all);
         l.setLevel(1);
         Node res = tree.skew(l);
@@ -51,7 +53,7 @@ public class TestOffheapAATree {
         // r is rightnode of t
         t.setRightNode(r.getAddr());
 
-        OffheapAATree tree = new OffheapAATree();
+        OffheapAATree tree = new OffheapAATree(all);
         Node res = tree.skew(t);
 
         // the returned node should be L
@@ -68,15 +70,15 @@ public class TestOffheapAATree {
 
     @Test
     public void split_null_node_should_return_null() {
-        OffheapAATree tree = new OffheapAATree();
+        OffheapAATree tree = new OffheapAATree(null);
         Node res = tree.split(null);
         assertNull(res);
     }
 
     @Test
     public void split_node_with_null_rigth_node_should_return_same() {
-        OffheapAATree tree = new OffheapAATree();
         Allocator all = new Allocator(1l * 1024l * 1024l);
+        OffheapAATree tree = new OffheapAATree(all);
         Node l = new Node(all);
         l.setLevel(1);
         Node res = tree.split(l);
@@ -85,8 +87,8 @@ public class TestOffheapAATree {
 
     @Test
     public void split_node_with_rigth_of_rigth_null_node_should_return_same() {
-        OffheapAATree tree = new OffheapAATree();
         Allocator all = new Allocator(1l * 1024l * 1024l);
+        OffheapAATree tree = new OffheapAATree(all);
         Node l = new Node(all);
         Node r = new Node(all);
         l.setLevel(1);
@@ -122,7 +124,7 @@ public class TestOffheapAATree {
         // r is rightnode of t
         r.setRightNode(x.getAddr());
 
-        OffheapAATree tree = new OffheapAATree();
+        OffheapAATree tree = new OffheapAATree(all);
         Node res = tree.split(t);
 
         // the returned node should be L
@@ -135,6 +137,16 @@ public class TestOffheapAATree {
         assertEquals(b.getAddr(), res.getLeftNode().getRightNode().getAddr());
         // x is right of r
         assertEquals(x.getAddr(), res.getRightNode().getAddr());
+    }
 
+    @Test
+    public void insert_in_null_node_create_a_new_node() {
+        Allocator all = new Allocator(1l * 1024l * 1024l);
+        OffheapAATree tree = new OffheapAATree(all);
+        Node res = tree.insert(null, 1l, "");
+
+        assertNotNull(res);
+        // Check key of node is 1
+        assertEquals(1l, res.getKey().longValue());
     }
 }

@@ -1,8 +1,15 @@
 package jbu.cache;
 
 
-public class OffheapAATree<K extends Comparable, V> {
+import jbu.offheap.Allocator;
 
+public class OffheapAATree<V> {
+
+    private final Allocator allocator;
+
+    public OffheapAATree(Allocator allocator) {
+        this.allocator = allocator;
+    }
 
     public Node skew(Node node) {
         if (node == null) {
@@ -39,7 +46,10 @@ public class OffheapAATree<K extends Comparable, V> {
     }
 
 
-    public Node insert(Node rootNode, K key, V value) {
+    public Node insert(Node rootNode, Long key, V value) {
+        if (rootNode == null) {
+            return new Node(allocator, 1, key, value);
+        }
         return null;
     }
 
