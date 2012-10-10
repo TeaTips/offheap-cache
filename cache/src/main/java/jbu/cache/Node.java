@@ -12,6 +12,8 @@ public class Node<V> {
 
     private static Logger LOGGER = LoggerFactory.getLogger(Node.class);
 
+    private static final Boolean LOGGER_IS_TRACE_ENABLED = LOGGER.isTraceEnabled();
+
     private static UnsafePrimitiveBeanSerializer SERIALIZER = new UnsafePrimitiveBeanSerializer();
 
     private Allocator allocator;
@@ -39,7 +41,8 @@ public class Node<V> {
         this.level = level;
         setKey(key);
         setValue(value);
-        saveNode(allocator.getStoreContext(allocator.alloc()), this);
+        addr = this.allocator.alloc();
+        saveNode(allocator.getStoreContext(addr), this);
     }
 
 
@@ -84,6 +87,9 @@ public class Node<V> {
     private static Node loadNode(LoadContext loadContext, Node rootnode) {
         try {
             Node node = (Node) SERIALIZER.deserialize(loadContext);
+            if (LOGGER_IS_TRACE_ENABLED) {
+                LOGGER.trace("node_loaded: {}", node);
+            }
             node.allocator = rootnode.allocator;
             return node;
         } catch (CannotDeserializeException e) {
@@ -104,12 +110,20 @@ public class Node<V> {
         }
     }
 
+    long getLeftNodeAddr() {
+        return leftnode;
+    }
+
     Node getRightNode() {
         if (rightnode >= 0) {
             return loadNode(allocator.getLoadContext(rightnode), this);
         } else {
             return null;
         }
+    }
+
+    long getRightNodeAddr() {
+        return rightnode;
     }
 
     long getAddr() {

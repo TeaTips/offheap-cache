@@ -139,4 +139,6 @@ abstract class Bins {
     public int getUsedSize() {
         return occupation.intValue() * realChunkSize;
     }
+
+    public abstract void freeAll();
 }

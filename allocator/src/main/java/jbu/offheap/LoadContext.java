@@ -267,6 +267,10 @@ public class LoadContext {
     // loadArray has a better impl, but working only when jdk7 are really fully implemented...
     // Workaround for copy memory
     public void loadPrimitive(Object dest, final long destOffset, final int primitiveLength) {
+        if (LOGGER_IS_TRACE_ENABLED) {
+            LOGGER.trace("load_primitive, dest: {}, offset: {}, length: {}, chunk_remaining: {}",
+                    dest, destOffset, primitiveLength, this.remaining);
+        }
         int totalByteRemaining = primitiveLength;
         do {
             int byteToCopy = (totalByteRemaining > remaining) ? remaining : totalByteRemaining;
@@ -277,25 +281,28 @@ public class LoadContext {
             if (byteRemaining / LONG_LENGTH == 1) {
                 // copy 8 byte
                 long b = unsafe.getLong(null, this.currentBaseAdr + this.currentOffset);
-                unsafe.putLong(dest, destOffset, b);
+                unsafe.putLong(dest, destOffset + (primitiveLength - byteRemaining), b);
                 byteRemaining -= LONG_LENGTH;
             }
             if (byteRemaining / INT_LENGTH == 1) {
                 // copy 4 byte
                 int b = unsafe.getInt(null, this.currentBaseAdr + this.currentOffset);
-                unsafe.putInt(dest, destOffset, b);
+                if (LOGGER_IS_TRACE_ENABLED) {
+                    LOGGER.trace("load_partial_primitive, bits: {}", Integer.toBinaryString(b));
+                }
+                unsafe.putInt(dest, destOffset + (primitiveLength - byteRemaining), b);
                 byteRemaining -= INT_LENGTH;
             }
             if (byteRemaining / SHORT_LENGTH == 1) {
                 // copy 2 byte
                 short b = unsafe.getShort(null, this.currentBaseAdr + this.currentOffset);
-                unsafe.putShort(dest, destOffset, b);
+                unsafe.putShort(dest, destOffset + (primitiveLength - byteRemaining), b);
                 byteRemaining -= SHORT_LENGTH;
             }
             if (byteRemaining / BYTE_LENGTH == 1) {
                 // copy 1 byte
                 byte b = unsafe.getByte(null, this.currentBaseAdr + this.currentOffset);
-                unsafe.putByte(dest, destOffset, b);
+                unsafe.putByte(dest, destOffset + (primitiveLength - byteRemaining), b);
                 byteRemaining -= BYTE_LENGTH;
             }
             totalByteRemaining -= byteToCopy;

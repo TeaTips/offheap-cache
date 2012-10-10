@@ -63,9 +63,9 @@ public class TestOffheapAATree {
         // L left node should be A
         assertEquals(res.getLeftNode().getAddr(), a.getAddr());
         // T left node should be B
-        assertEquals(t.getLeftNode().getAddr(), b.getAddr());
+        assertEquals(res.getRightNode().getLeftNode().getAddr(), b.getAddr());
         // T right node should be R
-        assertEquals(t.getRightNode().getAddr(), r.getAddr());
+        assertEquals(res.getRightNode().getRightNode().getAddr(), r.getAddr());
     }
 
     @Test
@@ -143,10 +143,30 @@ public class TestOffheapAATree {
     public void insert_in_null_node_create_a_new_node() {
         Allocator all = new Allocator(1l * 1024l * 1024l);
         OffheapAATree tree = new OffheapAATree(all);
-        Node res = tree.insert(null, 1l, "");
+        Node res = tree.put(null, 1l, "");
 
         assertNotNull(res);
         // Check key of node is 1
         assertEquals(1l, res.getKey().longValue());
+    }
+
+    @Test
+    public void insert_with_key_inf_should_inserted_at_left() {
+        Allocator all = new Allocator(1l * 1024l * 1024l);
+        OffheapAATree tree = new OffheapAATree(all);
+        Node firstNode = tree.put(null, 10l, "");
+        Node newRoot = tree.put(firstNode, 5l, "");
+        assertNotNull(newRoot);
+        // Check newRoot is last insertedNode
+        assertEquals(5l, newRoot.getKey().longValue());
+
+        // Check level is 2
+        assertEquals(1l, newRoot.getLevel());
+
+        // Check left node is null
+        assertNull(newRoot.getLeftNode());
+
+        // Check rigth node is firstnode
+        assertEquals(10l, newRoot.getRightNode().getKey().longValue());
     }
 }

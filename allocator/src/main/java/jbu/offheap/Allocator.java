@@ -22,7 +22,7 @@ public class Allocator implements AllocatorMBean {
 
     private static final Boolean LOGGER_IS_DEBUG_ENABLED = LOGGER.isDebugEnabled();
 
-    private static final int DEFAULT_MIN_CHUNK_SIZE = 256;
+    private static final int DEFAULT_MIN_CHUNK_SIZE = 64;
     private static final double MIN_FILL_FACTOR = 0.75d;
 
     //Thread safe until cannot be modified at runtime
@@ -76,6 +76,7 @@ public class Allocator implements AllocatorMBean {
 
     /**
      * Alloc with the littest chunk size
+     *
      * @return
      */
     public long alloc() {
@@ -252,4 +253,9 @@ public class Allocator implements AllocatorMBean {
         return (firstChunkSize > 8 && Integer.bitCount(firstChunkSize) == 1);
     }
 
+    public void freeAll() {
+        for (Bins bin : binsByAddr.values()) {
+            bin.freeAll();
+        }
+    }
 }

@@ -191,6 +191,16 @@ public class StoreContext {
             }
             int byteToCopy = (this.remaining > byteRemaining) ? byteRemaining : this.remaining;
             unsafe.copyMemory(object, offset + (length - byteRemaining), null, this.currentBaseAdr + this.currentOffset, byteToCopy);
+            if (LOGGER_IS_TRACE_ENABLED) {
+                if (byteToCopy == 8) {
+                    long b = unsafe.getLong(this.currentBaseAdr + this.currentOffset);
+                    LOGGER.trace("store_something, bits: {}", Long.toBinaryString(b));
+                }
+                if (byteToCopy == 4) {
+                    int b = unsafe.getInt(this.currentBaseAdr + this.currentOffset);
+                    LOGGER.trace("store_something, bits: {}", Integer.toBinaryString(b));
+                }
+            }
             byteRemaining -= byteToCopy;
             this.currentOffset += byteToCopy;
             this.remaining -= byteToCopy;

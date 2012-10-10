@@ -107,6 +107,14 @@ class UnsafeBins extends Bins implements UnsafeBinsMBean {
     }
 
     @Override
+    public void freeAll() {
+        for (int i = 0; i < chunks.length(); i++) {
+            this.chunks.set(i, FREE);
+            occupation.decrementAndGet();
+        }
+    }
+
+    @Override
     void setNextChunkId(int currentChunkId, long nextChunkId) {
         // Set nextChunkId to last 8 bytes of currentChunkId
         long nextChunkOffset = binAddr + findOffsetForChunkId(currentChunkId) + userDataChunkSize + LENGTH_OFFSET;

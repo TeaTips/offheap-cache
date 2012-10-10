@@ -19,7 +19,7 @@ public class OffheapAATree<V> {
         } else if (node.getLeftNode().getLevel() == node.getLevel()) {
             //Swap the pointers of horizontal left links.
             Node nodeToSwap = node.getLeftNode();
-            node.setLeftNode(nodeToSwap.getRightNode().getAddr());
+            node.setLeftNode(nodeToSwap.getRightNodeAddr());
             nodeToSwap.setRightNode(node.getAddr());
             return nodeToSwap;
         } else {
@@ -36,7 +36,7 @@ public class OffheapAATree<V> {
         } else if (node.getLevel() == node.getRightNode().getRightNode().getLevel()) {
             //We have two horizontal right links.  Take the middle node, elevate it, and return it.
             Node nodeToElevate = node.getRightNode();
-            node.setRightNode(nodeToElevate.getLeftNode().getAddr());
+            node.setRightNode(nodeToElevate.getLeftNodeAddr());
             nodeToElevate.setLeftNode(node.getAddr());
             nodeToElevate.setLevel(nodeToElevate.getLevel() + 1);
             return nodeToElevate;
@@ -46,9 +46,28 @@ public class OffheapAATree<V> {
     }
 
 
-    public Node insert(Node rootNode, Long key, V value) {
+    public Node put(Node rootNode, Long key, V value) {
         if (rootNode == null) {
             return new Node(allocator, 1, key, value);
+        } else if (key < rootNode.getKey()) {
+            rootNode.setLeftNode(put(rootNode.getLeftNode(), key, value).getAddr());
+        } else if (key > rootNode.getKey()) {
+            rootNode.setRightNode(put(rootNode.getRightNode(), key, value).getAddr());
+        } else {
+            // Replace value
+        }
+
+        return split(skew(rootNode));
+    }
+
+
+    public V get(Node rootNode, Long key) {
+        if (rootNode.getKey().compareTo(key) == 0) {
+            return (V) rootNode.getValue();
+        } else if (rootNode.getKey().compareTo(key) < 0 && rootNode.getRightNodeAddr() >= 0) {
+            return get(rootNode.getRightNode(), key);
+        } else if (rootNode.getKey().compareTo(key) > 0 && rootNode.getLeftNodeAddr() >= 0) {
+            return get(rootNode.getLeftNode(), key);
         }
         return null;
     }
@@ -60,6 +79,10 @@ public class OffheapAATree<V> {
 
     public Node decreaseLevel(Node node) {
         return null;
+    }
+
+    public void clean() {
+        allocator.freeAll();
     }
 }
 

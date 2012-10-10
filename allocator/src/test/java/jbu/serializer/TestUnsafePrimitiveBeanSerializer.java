@@ -344,4 +344,20 @@ public class TestUnsafePrimitiveBeanSerializer {
 
     }
 
+    @Test
+    public void test_storing_node() throws CannotDeserializeException {
+        Allocator a = new Allocator(1 * 1024 * 1024);
+        Serializer pbs = new UnsafePrimitiveBeanSerializer();
+        Node c = new Node(1, 2, 3, 4, 5, Integer.MAX_VALUE);
+        long addr = a.alloc();
+        // Serialize
+        StoreContext sc = a.getStoreContext(addr);
+
+        pbs.serialize(c, sc);
+
+        // Deser
+        LoadContext lc = a.getLoadContext(addr);
+        Object res = pbs.deserialize(lc);
+        assertEquals(c, res);
+    }
 }
