@@ -20,6 +20,7 @@ public class Node<V> {
     private long addr;
     private long leftnode = -1;
     private long rightnode = -1;
+    private long rootnode = -1;
     private long level;
     private long key;
     private long value;
@@ -126,6 +127,18 @@ public class Node<V> {
         return rightnode;
     }
 
+    Node getRootNode() {
+        if (rootnode >= 0) {
+            return loadNode(allocator.getLoadContext(rootnode), this);
+        } else {
+            return null;
+        }
+    }
+
+    long getRootNodeAddr() {
+        return rootnode;
+    }
+
     long getAddr() {
         return addr;
     }
@@ -149,12 +162,18 @@ public class Node<V> {
         saveNode(allocator.getStoreContext(this.addr), this);
     }
 
+    void setRootNode(long rootnode) {
+        this.rootnode = rootnode;
+        saveNode(allocator.getStoreContext(this.addr), this);
+    }
+
     @Override
     public String toString() {
         return "Node{" +
                 ", addr=" + addr +
                 ", leftnode=" + leftnode +
                 ", rightnode=" + rightnode +
+                ", rootnode=" + rootnode +
                 ", level=" + level +
                 ", key=" + key +
                 ", value=" + value +

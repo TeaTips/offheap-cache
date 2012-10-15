@@ -40,9 +40,13 @@ public class TestOffheapAATree {
         a.setLevel(1);
         b.setLevel(1);
         r.setLevel(1);
+        a.setRootNode(l.getAddr());
+        b.setRootNode(l.getAddr());
+        r.setRootNode(t.getAddr());
         // l and t are upper level
         l.setLevel(2);
         t.setLevel(2);
+        l.setRootNode(t.getAddr());
 
         // l have two children a and b
         l.setLeftNode(a.getAddr());
@@ -58,14 +62,29 @@ public class TestOffheapAATree {
 
         // the returned node should be L
         assertEquals(l.getAddr(), res.getAddr());
+        l = res;
         // L right node should be T
-        assertEquals(res.getRightNode().getAddr(), t.getAddr());
+        assertEquals(l.getRightNode().getAddr(), t.getAddr());
+        t = l.getRightNode();
         // L left node should be A
-        assertEquals(res.getLeftNode().getAddr(), a.getAddr());
+        assertEquals(l.getLeftNode().getAddr(), a.getAddr());
+        a = l.getRightNode();
         // T left node should be B
-        assertEquals(res.getRightNode().getLeftNode().getAddr(), b.getAddr());
+        assertEquals(t.getLeftNode().getAddr(), b.getAddr());
+        b = t.getLeftNode();
         // T right node should be R
-        assertEquals(res.getRightNode().getRightNode().getAddr(), r.getAddr());
+        assertEquals(t.getRightNode().getAddr(), r.getAddr());
+        r = t.getRightNode();
+        // T rootnode is L
+        assertEquals(t.getRootNodeAddr(), l.getAddr());
+        // B rootnode is T
+        assertEquals(b.getRootNodeAddr(), t.getAddr());
+        // R rootnode is T
+        assertEquals(r.getRootNodeAddr(), t.getAddr());
+        // A rootnode is L
+        assertEquals(a.getRootNodeAddr(), l.getAddr());
+        // L has no rootnode
+        assertEquals(l.getRootNodeAddr(), -1);
     }
 
     @Test
@@ -110,6 +129,10 @@ public class TestOffheapAATree {
         // a b are leaf
         a.setLevel(1);
         b.setLevel(1);
+        a.setRootNode(t.getAddr());
+        b.setRootNode(r.getAddr());
+        x.setRootNode(r.getAddr());
+        r.setRootNode(t.getAddr());
 
         // r,x and t are upper level
         r.setLevel(2);
@@ -127,16 +150,32 @@ public class TestOffheapAATree {
         OffheapAATree tree = new OffheapAATree(all);
         Node res = tree.split(t);
 
-        // the returned node should be L
+        // the returned node should be r
         assertEquals(r.getAddr(), res.getAddr());
+        r=res;
         // t is left of r
         assertEquals(t.getAddr(), res.getLeftNode().getAddr());
+        t=r.getLeftNode();
         // a is left of t
-        assertEquals(a.getAddr(), res.getLeftNode().getLeftNode().getAddr());
+        assertEquals(a.getAddr(),t.getLeftNode().getAddr());
+        a=t.getLeftNode();
         // b is right of t
-        assertEquals(b.getAddr(), res.getLeftNode().getRightNode().getAddr());
+        assertEquals(b.getAddr(), t.getRightNode().getAddr());
+        b=t.getRightNode();
         // x is right of r
         assertEquals(x.getAddr(), res.getRightNode().getAddr());
+        x=r.getRightNode();
+
+        // r rootnode is empty
+        assertEquals(r.getRootNodeAddr(), -1);
+        // t rootnode is r
+        assertEquals(t.getRootNodeAddr(), r.getAddr());
+        // a rootnode is t
+        assertEquals(a.getRootNodeAddr(), t.getAddr());
+        // b rootnode is t
+        assertEquals(b.getRootNodeAddr(), t.getAddr());
+        // x rootnode is r
+        assertEquals(x.getRootNodeAddr(), r.getAddr());
     }
 
     @Test

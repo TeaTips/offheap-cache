@@ -19,14 +19,22 @@ public class OffheapAATree<V> {
         } else if (node.getLeftNode().getLevel() == node.getLevel()) {
             //Swap the pointers of horizontal left links.
             Node nodeToSwap = node.getLeftNode();
-            node.setLeftNode(nodeToSwap.getRightNodeAddr());
+            // inv root node
+            long rootNode = node.getRootNodeAddr();
+            node.setRootNode(nodeToSwap.getAddr());
+            nodeToSwap.setRootNode(rootNode);
+
+            // Exchange right node
+            Node rightChildOfSwap = nodeToSwap.getRightNode();
+            node.setLeftNode(rightChildOfSwap.getAddr());
+            rightChildOfSwap.setRootNode(node.getAddr());
             nodeToSwap.setRightNode(node.getAddr());
+
             return nodeToSwap;
         } else {
             return node;
         }
     }
-
 
     public Node split(Node node) {
         if (node == null) {
@@ -36,15 +44,22 @@ public class OffheapAATree<V> {
         } else if (node.getLevel() == node.getRightNode().getRightNode().getLevel()) {
             //We have two horizontal right links.  Take the middle node, elevate it, and return it.
             Node nodeToElevate = node.getRightNode();
-            node.setRightNode(nodeToElevate.getLeftNodeAddr());
-            nodeToElevate.setLeftNode(node.getAddr());
+            // change root
+            nodeToElevate.setRootNode(node.getRootNodeAddr());
             nodeToElevate.setLevel(nodeToElevate.getLevel() + 1);
+
+            Node nodeTopSwap = nodeToElevate.getLeftNode();
+            node.setRightNode(nodeTopSwap.getAddr());
+            nodeTopSwap.setRootNode(node.getAddr());
+
+            nodeToElevate.setLeftNode(node.getAddr());
+            node.setRootNode(nodeToElevate.getAddr());
+
             return nodeToElevate;
         } else {
             return node;
         }
     }
-
 
     public Node put(Node rootNode, Long key, V value) {
         if (rootNode == null) {
@@ -60,7 +75,6 @@ public class OffheapAATree<V> {
         return split(skew(rootNode));
     }
 
-
     public V get(Node rootNode, Long key) {
         if (rootNode.getKey().compareTo(key) == 0) {
             return (V) rootNode.getValue();
@@ -71,7 +85,6 @@ public class OffheapAATree<V> {
         }
         return null;
     }
-
 
     public Node delete(Node rootNode, Node newNode) {
         return null;
