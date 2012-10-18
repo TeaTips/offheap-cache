@@ -22,7 +22,7 @@ public class Allocator implements AllocatorMBean {
 
     private static final Boolean LOGGER_IS_DEBUG_ENABLED = LOGGER.isDebugEnabled();
 
-    private static final int DEFAULT_MIN_CHUNK_SIZE = 64;
+    private static final int DEFAULT_MIN_CHUNK_SIZE = 80;
     private static final double MIN_FILL_FACTOR = 0.75d;
 
     //Thread safe until cannot be modified at runtime
@@ -250,7 +250,8 @@ public class Allocator implements AllocatorMBean {
     }
 
     private boolean checkFirstChunkSizeValid(int firstChunkSize) {
-        return (firstChunkSize > 8 && Integer.bitCount(firstChunkSize) == 1);
+        //return (firstChunkSize > 8 && Integer.bitCount(firstChunkSize) == 1);
+        return true;
     }
 
     public void freeAll() {

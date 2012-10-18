@@ -1,6 +1,5 @@
 package jbu.serializer.unsafe;
 
-import com.google.common.collect.Collections2;
 import jbu.UnsafeReflection;
 
 import java.lang.reflect.Field;

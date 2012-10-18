@@ -40,9 +40,11 @@ class UnsafeBins extends Bins implements UnsafeBinsMBean {
         super(initialChunkNumber, chunkSize, baseAddr);
         long bufferSize = (long) initialChunkNumber * (long) realChunkSize;
         // FIXME Cannot allocate more than Integer.MAX_VALUE. Check this
+        LOGGER.info("allocate_buffer, size: {} MB, chunk_size: {}, base_logical_addr: {}}"
+                , bufferSize / 1024 / 1024, chunkSize, baseAddr);
         binAddr = unsafe.allocateMemory((long) initialChunkNumber * (long) realChunkSize);
-        LOGGER.info("allocate_buffer, size: {} MB, chunk_size: {}, base_logical_addr: {}, begin_addr: {}"
-                , bufferSize / 1024 / 1024, chunkSize, baseAddr, binAddr);
+        LOGGER.info("buffer_allocated, begin_addr: {}"
+                , binAddr);
     }
 
     @Override
